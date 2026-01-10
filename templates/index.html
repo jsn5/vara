@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malayalam Handwriting Collector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans Malayalam', 'Arial Unicode MS', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #00d9ff;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .canvas-section {
+            background: #0f0f23;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .target-word {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .target-word h2 {
+            font-size: 3.5rem;
+            color: #fff;
+            margin-bottom: 10px;
+            font-weight: normal;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .word-category {
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #drawing-canvas {
+            display: block;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .canvas-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #ff6b6b;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: #0f0f23;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel h3 {
+            font-size: 1rem;
+            color: #00d9ff;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .category-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .category-select:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+
+        .device-info {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .device-info .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+
+        .status-dot.active {
+            background: #2ed573;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pressure-bar {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .pressure-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            width: 0%;
+            transition: width 0.05s ease;
+        }
+
+        .recent-words {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .recent-word {
+            padding: 8px;
+            background: #1a1a2e;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .recent-word .word {
+            font-size: 1.1rem;
+        }
+
+        .recent-word .count {
+            font-size: 0.7rem;
+            color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .keyboard-hints {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .keyboard-hints kbd {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2ed573;
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>മലയാളം കൈയെഴുത്ത് ശേഖരണം</h1>
+            <p class="subtitle">Malayalam Handwriting Data Collection Tool</p>
+        </header>
+
+        <div class="main-content">
+            <div class="canvas-section">
+                <div class="target-word">
+                    <h2 id="current-word">Loading...</h2>
+                    <span class="word-category" id="word-category">simple</span>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="drawing-canvas" width="800" height="400"></canvas>
+                </div>
+
+                <div class="canvas-controls">
+                    <button class="btn btn-secondary" id="clear-btn">Clear (C)</button>
+                    <button class="btn btn-primary" id="save-btn">Save & Next (Enter)</button>
+                    <button class="btn btn-secondary" id="skip-btn">Skip (S)</button>
+                    <button class="btn btn-danger" id="undo-btn">Undo (Z)</button>
+                </div>
+
+                <div class="keyboard-hints">
+                    <kbd>Enter</kbd> Save & Next |
+                    <kbd>C</kbd> Clear |
+                    <kbd>S</kbd> Skip |
+                    <kbd>Z</kbd> Undo last stroke
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>Category</h3>
+                    <select class="category-select" id="category-select">
+                        <option value="all">All Words</option>
+                        <option value="characters">Characters (അക്ഷരങ്ങൾ)</option>
+                        <option value="simple">Simple Words</option>
+                        <option value="medium">Medium Words</option>
+                        <option value="complex">Complex Words</option>
+                        <option value="numbers">Numbers</option>
+                    </select>
+                </div>
+
+                <div class="panel">
+                    <h3>Device Status</h3>
+                    <div class="device-info">
+                        <div class="status">
+                            <span class="status-dot" id="tablet-status"></span>
+                            <span id="tablet-name">Detecting tablet...</span>
+                        </div>
+                        <div class="status">
+                            <span class="status-dot" id="pressure-status"></span>
+                            <span id="pressure-support">Pressure: Unknown</span>
+                        </div>
+                    </div>
+                    <div class="pressure-bar">
+                        <div class="pressure-fill" id="pressure-fill"></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-samples">0</div>
+                            <div class="stat-label">Total Samples</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="unique-words">0</div>
+                            <div class="stat-label">Unique Words</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="session-samples">0</div>
+                            <div class="stat-label">This Session</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stroke-count">0</div>
+                            <div class="stat-label">Current Strokes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Recent Words</h3>
+                    <div class="recent-words" id="recent-words">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Saved!</div>
+
+    <script>
+        // State
+        let currentWord = '';
+        let currentCategory = 'all';
+        let strokes = [];
+        let currentStroke = [];
+        let isDrawing = false;
+        let sessionSamples = 0;
+        let pressureSupported = false;
+        let tabletDetected = false;
+
+        // Canvas setup
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size based on container
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const width = container.clientWidth;
+            const height = Math.min(400, window.innerHeight * 0.4);
+
+            // Store current drawing
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Restore drawing
+            ctx.putImageData(imageData, 0, 0);
+
+            setupCanvasStyle();
+        }
+
+        function setupCanvasStyle() {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000';
+        }
+
+        // Initialize
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Pointer events for tablet support
+        canvas.addEventListener('pointerdown', handlePointerDown);
+        canvas.addEventListener('pointermove', handlePointerMove);
+        canvas.addEventListener('pointerup', handlePointerUp);
+        canvas.addEventListener('pointerleave', handlePointerUp);
+        canvas.addEventListener('pointercancel', handlePointerUp);
+
+        // Prevent default touch behavior
+        canvas.addEventListener('touchstart', e => e.preventDefault());
+        canvas.addEventListener('touchmove', e => e.preventDefault());
+
+        function handlePointerDown(e) {
+            isDrawing = true;
+            currentStroke = [];
+
+            // Detect tablet
+            if (e.pointerType === 'pen') {
+                tabletDetected = true;
+                document.getElementById('tablet-status').classList.add('active');
+                document.getElementById('tablet-name').textContent = 'Tablet Connected';
+            }
+
+            // Check pressure support
+            if (e.pressure > 0 && e.pressure < 1) {
+                pressureSupported = true;
+                document.getElementById('pressure-status').classList.add('active');
+                document.getElementById('pressure-support').textContent = 'Pressure: Supported';
+            }
+
+            const point = getPoint(e);
+            currentStroke.push(point);
+
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+        }
+
+        function handlePointerMove(e) {
+            // Update pressure display
+            const pressure = e.pressure || 0;
+            document.getElementById('pressure-fill').style.width = `${pressure * 100}%`;
+
+            if (!isDrawing) return;
+
+            const point = getPoint(e);
+            currentStroke.push(point);
+
+            // Dynamic line width based on pressure
+            const lineWidth = pressureSupported ?
+                1 + (e.pressure * 4) :
+                2;
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+        }
+
+        function handlePointerUp(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (currentStroke.length > 0) {
+                strokes.push([...currentStroke]);
+                currentStroke = [];
+                updateStrokeCount();
+            }
+
+            ctx.beginPath();
+        }
+
+        function getPoint(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                pressure: e.pressure || 0.5,
+                timestamp: Date.now(),
+                tiltX: e.tiltX || 0,
+                tiltY: e.tiltY || 0
+            };
+        }
+
+        // Clear canvas
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes = [];
+            currentStroke = [];
+            updateStrokeCount();
+        }
+
+        // Undo last stroke
+        function undoStroke() {
+            if (strokes.length === 0) return;
+
+            strokes.pop();
+            redrawStrokes();
+            updateStrokeCount();
+        }
+
+        // Redraw all strokes
+        function redrawStrokes() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (const stroke of strokes) {
+                if (stroke.length === 0) continue;
+
+                ctx.beginPath();
+                ctx.moveTo(stroke[0].x, stroke[0].y);
+
+                for (let i = 1; i < stroke.length; i++) {
+                    const point = stroke[i];
+                    ctx.lineWidth = pressureSupported ?
+                        1 + (point.pressure * 4) :
+                        2;
+                    ctx.lineTo(point.x, point.y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Update stroke count display
+        function updateStrokeCount() {
+            document.getElementById('stroke-count').textContent = strokes.length;
+        }
+
+        // Get new word
+        async function getNewWord() {
+            try {
+                const response = await fetch(`/api/get_word?category=${currentCategory}`);
+                const data = await response.json();
+                currentWord = data.word;
+                document.getElementById('current-word').textContent = currentWord;
+                document.getElementById('word-category').textContent = data.category;
+            } catch (error) {
+                console.error('Error fetching word:', error);
+            }
+        }
+
+        // Save sample
+        async function saveSample() {
+            if (strokes.length === 0) {
+                showToast('Please write something first', true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/save_sample', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        word: currentWord,
+                        strokes: strokes,
+                        metadata: {
+                            canvas_width: canvas.width,
+                            canvas_height: canvas.height,
+                            device: tabletDetected ? 'wacom_tablet' : 'mouse',
+                            pressure_supported: pressureSupported
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    sessionSamples++;
+                    document.getElementById('session-samples').textContent = sessionSamples;
+                    showToast(`Saved! (${data.stroke_count} strokes, ${data.point_count} points)`);
+                    clearCanvas();
+                    getNewWord();
+                    updateStats();
+                } else {
+                    showToast('Error saving sample', true);
+                }
+            } catch (error) {
+                console.error('Error saving sample:', error);
+                showToast('Error saving sample', true);
+            }
+        }
+
+        // Update statistics
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+
+                document.getElementById('total-samples').textContent = data.total_samples;
+                document.getElementById('unique-words').textContent = data.unique_words;
+
+                // Update recent words
+                const recentWordsEl = document.getElementById('recent-words');
+                const sortedWords = Object.entries(data.word_counts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                recentWordsEl.innerHTML = sortedWords.map(([word, count]) => `
+                    <div class="recent-word">
+                        <span class="word">${word}</span>
+                        <span class="count">${count}</span>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.toggle('error', isError);
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Event listeners
+        document.getElementById('clear-btn').addEventListener('click', clearCanvas);
+        document.getElementById('save-btn').addEventListener('click', saveSample);
+        document.getElementById('skip-btn').addEventListener('click', () => {
+            clearCanvas();
+            getNewWord();
+        });
+        document.getElementById('undo-btn').addEventListener('click', undoStroke);
+
+        document.getElementById('category-select').addEventListener('change', (e) => {
+            currentCategory = e.target.value;
+            clearCanvas();
+            getNewWord();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch (e.key.toLowerCase()) {
+                case 'enter':
+                    e.preventDefault();
+                    saveSample();
+                    break;
+                case 'c':
+                    clearCanvas();
+                    break;
+                case 's':
+                    clearCanvas();
+                    getNewWord();
+                    break;
+                case 'z':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                    }
+                    undoStroke();
+                    break;
+            }
+        });
+
+        // Initialize
+        getNewWord();
+        updateStats();
+
+        // Periodic stats update
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>

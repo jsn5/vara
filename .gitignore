@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Data and models (large files)
+data/*.jsonl
+checkpoints/*.pt
+onnx_models/*.onnx
+corpus/*.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Generated images
+*.png
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Local config
+.claude/
