@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malayalam Handwriting Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.5em;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .canvas-wrapper {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        #handwriting-canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+            margin-right: 6px;
+        }
+
+        .status-dot.ready {
+            background: #4a4;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 24px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        button:hover {
+            background: #f0f0f0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        .btn-primary:hover {
+            background: #444;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+
+        .loading.hidden {
+            display: none;
+        }
+
+        .canvas-container {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Malayalam Handwriting Generator</h1>
+
+        <div class="canvas-container">
+            <div class="canvas-wrapper">
+                <canvas id="handwriting-canvas" width="800" height="400"></canvas>
+            </div>
+            <div class="loading" id="loading">Loading models...</div>
+        </div>
+
+        <div class="status">
+            <span><span class="status-dot" id="status-dot"></span><span id="status-text">Loading...</span></span>
+            <span id="stroke-count">Strokes: 0</span>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Temperature: <span id="temp-value">0.5</span></label>
+                <input type="range" id="temperature" min="0.1" max="1.5" step="0.1" value="0.5">
+            </div>
+            <div class="control-group">
+                <label>Speed: <span id="speed-value">20</span></label>
+                <input type="range" id="speed" min="1" max="50" step="1" value="20">
+            </div>
+            <div class="control-group">
+                <label>Stroke Width: <span id="width-value">5</span></label>
+                <input type="range" id="stroke-width" min="5" max="12" step="0.5" value="5">
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-primary" id="generate-btn">Generate</button>
+            <button id="clear-btn">Clear</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.0/dist/ort.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
