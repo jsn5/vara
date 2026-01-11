@@ -258,7 +258,6 @@ class MalayalamHandwritingGenerator {
 
     async animateStrokes(strokes) {
         const speedSlider = parseInt(document.getElementById('speed').value);
-        const speed = 51 - speedSlider;
         const strokeWidth = parseFloat(document.getElementById('stroke-width').value);
 
         this.ctx.strokeStyle = '#222';
@@ -285,8 +284,19 @@ class MalayalamHandwritingGenerator {
 
         let strokeIndex = 0;
         let penDown = true;
-        const batchSize = speed >= 10 ? speed : Math.max(1, Math.floor(speed / 2));
-        const frameDelay = speed < 10 ? (11 - speed) * 20 : 0;
+
+        // Speed: slider 1 = very slow, slider 50 = fast
+        let batchSize, frameDelay;
+        if (speedSlider <= 10) {
+            batchSize = 1;
+            frameDelay = (11 - speedSlider) * 80; // 800ms down to 80ms
+        } else if (speedSlider <= 30) {
+            batchSize = Math.floor((speedSlider - 10) / 4) + 1; // 1-5 strokes
+            frameDelay = 0;
+        } else {
+            batchSize = Math.floor((speedSlider - 30) * 2.5) + 5; // 5-55 strokes
+            frameDelay = 0;
+        }
 
         const animate = () => {
             for (let i = 0; i < batchSize && strokeIndex < strokes.length; i++, strokeIndex++) {
